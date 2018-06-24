@@ -29,64 +29,39 @@ for entry in os.scandir():
 
         elif entry.name.endswith('.uvproj') or entry.name.endswith('.uvprojx'):
             projectfilename = entry.name
+
+            if entry.name.endswith('.uvproj'):
+                uvoptfile = entry.name.replace('.uvproj', '.uvopt')
+            elif entry.name.endswith('.uvprojx'):
+                uvoptfile = entry.name.replace('.uvprojx', '.uvoptx')
+
+            tree = ET.ElementTree(file=uvoptfile)
+            for tag in tree.findall('Target'):
+                TargetOption = tag.find('TargetOption')
+                OPTFL = TargetOption.find('OPTFL')
+                IsCurrentTarget = int(OPTFL.find('IsCurrentTarget').text)
+                if IsCurrentTarget:
+                    TargetName = tag.find('TargetName').text
+
             tree = ET.ElementTree(file=entry.name)
-            tag_cfg_list = tree.find('Targets').findall('Target')
-            listsize = len(tag_cfg_list)
-            if listsize > 1:
-                print("There are multiple configuration:")
-                for index in range(0, listsize):
-                    print("%d %s" % (index+1, tag_cfg_list[index].find('TargetName').text))
+            for tag in tree.find('Targets').findall('Target'):
+                if tag.find('TargetName').text == TargetName:
+                    TargetOption = tag.find('TargetOption')
+                    TargetCommonOption = TargetOption.find('TargetCommonOption')
+                    OutputDirectory = TargetCommonOption.find('OutputDirectory').text
+                    OutputDirectory = os.path.normpath(os.path.join(os.getcwd(), OutputDirectory))
 
-                print("Enter the index num to selete:")
-                strin = input()
-                if strin.isdigit():
-                    selnum = int(strin)
-                    if (selnum < (listsize + 1)):
-                        TargetName = tag_cfg_list[selnum - 1].find('TargetName').text
-                        TargetOption = tag_cfg_list[selnum - 1].find('TargetOption')
-                        TargetCommonOption = TargetOption.find('TargetCommonOption')
-                        OutputDirectory = TargetCommonOption.find('OutputDirectory').text
-                        OutputDirectory = os.path.normpath(os.path.join(os.getcwd(), OutputDirectory))
+                    depfilename = os.path.splitext(projectfilename)[0] + '_' + TargetName + '.dep'
 
-                        depfilename = os.path.splitext(projectfilename)[0] + '_' + TargetName + '.dep'
-
-                        for entry in os.scandir(OutputDirectory):
-                            if entry.is_file() and entry.name == depfilename:
-                                sourcefile = os.path.join(OutputDirectory, entry.name)
-                                outputfile = os.path.splitext(entry.name)[0]
-                                break
-                        if '' == sourcefile:
-                            print('Please build the project once')
-                            input()
-                            sys.exit(0)
-                else:
-                    print("Please restart the tool, the input shounld be a number")
-                    input()
-                    sys.exit(0)
-
-            elif listsize == 1:
-                TargetName = tag_cfg_list[selnum - 1].find('TargetName').text
-                TargetOption = tag_cfg_list[selnum - 1].find('TargetOption')
-                TargetCommonOption = TargetOption.find('TargetCommonOption')
-                OutputDirectory = TargetCommonOption.find('OutputDirectory').text
-                OutputDirectory = os.path.normpath(os.path.join(os.getcwd(), OutputDirectory))
-
-                depfilename = projectfilename + '_' + TargetName + '.dep'
-
-                for entry in os.scandir(OutputDirectory):
-                    if entry.is_file() and entry.name == depfilename:
-                        sourcefile = os.path.join(OutputDirectory, entry.name)
-                        outputfile = os.path.splitext(entry.name)[0]
-                        break
-                if '' == sourcefile:
-                    print('Please build the project once')
-                    input()
-                    sys.exit(0)
-            else:
-                print("Please check the project configuration")
-                input()
-                sys.exit(0)
-            break
+                    for entry in os.scandir(OutputDirectory):
+                        if entry.is_file() and entry.name == depfilename:
+                            sourcefile = os.path.join(OutputDirectory, entry.name)
+                            outputfile = os.path.splitext(entry.name)[0]
+                            break
+                    if '' == sourcefile:
+                        print('Please build the project once')
+                        input()
+                        sys.exit(0)
 
 if '' == projectfilename:
     print('Can not find project file, enter any key to exit')
