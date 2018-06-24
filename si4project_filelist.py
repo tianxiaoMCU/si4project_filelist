@@ -8,35 +8,27 @@ import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-# 1、Find all .dep files and selete one
-items = os.listdir()
-sourcefilelist = []
-for names in items:
-    if names.endswith(".dep"):
-        sourcefilelist.append(names)
-
+# 1、Find .dep file
 sourcefile = ''
+for entry in os.scandir():
+    if entry.is_file():
+        if entry.name.endswith('.eww'):
+            for entry in os.scandir():
+                if entry.is_file():
+                    if entry.name.endswith('.dep'):
+                        sourcefile = entry.name
+                        break
+            if '' == sourcefile:
+                print('Please build the project once')
+                input()
+                sys.exit(0)
+        elif entry.name.endswith('.uvproj') or entry.name.endswith('.uvprojx'):
+            sourcefile = ''
+            break
 
-listsize = len(sourcefilelist)
-if listsize > 1:
-    print("There are multiple .dep file:")
-    for index in range(0, listsize):
-        print("%d %s" % (index+1, sourcefilelist[index]))
-
-    print("Enter the index num to selete one:")
-    strin = input()
-    if strin.isdigit():
-        selnum = int(strin)
-        if (selnum < (listsize + 1)):
-            sourcefile = sourcefilelist[selnum - 1]
-    else:
-        print("Please restart the tool, the input shounld be a number")
-        sys.exit(0)
-
-elif listsize == 1:
-    sourcefile = sourcefilelist[0]
-else:
-    sourcefile = ''
+if '' == sourcefile:
+    print('Can not find project file, enter any key to exit')
+    input()
     sys.exit(0)
 
 #2、parse the seleted dep file
@@ -58,11 +50,14 @@ if listsize > 1:
             output_tag = tag_cfg_list[selnum - 1].find('outputs')
     else:
         print("Please restart the tool, the input shounld be a number")
+        input()
         sys.exit(0)
 
 elif listsize == 1:
     output_tag = tag_cfg_list[0].find('outputs')
 else:
+    print("Please restart the tool, the input shounld be a number")
+    input()
     sys.exit(0)
 
 si4filelist = []
@@ -72,10 +67,7 @@ for elem in output_tag.iterfind('file'):
             si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
         elif elem.text.endswith('.h'):
             si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
-'''
-    elif elem.text.startswith('$TOOLKIT_DIR$'):
-        print(elem.text)
-'''
+
 
 #3、save the lists
 outputfile = open(os.path.splitext(sourcefile)[0]+'.si4project_filelist.txt', 'w')
