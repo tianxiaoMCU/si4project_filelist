@@ -7,6 +7,7 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
+import re
 
 # 1、Find .dep file
 projectfilename = ''
@@ -71,7 +72,6 @@ if '' == projectfilename:
 #2、parse the seleted dep file
 parsefile = open(sourcefile, 'r')
 si4filelist = []
-print(projectfilename)
 if projectfilename.endswith('.eww'):
     tree = ET.ElementTree(file=parsefile)
     tag_cfg_list = tree.findall('configuration')
@@ -109,7 +109,12 @@ if projectfilename.endswith('.eww'):
                 si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
 
 elif projectfilename.endswith('.uvproj') or projectfilename.endswith('.uvprojx'):
-    print('Parse MDK dep file')
+    for line in parsefile.readlines():
+        m = re.search(r"^F \(.*?\)|^I \(.*?\)", line)
+        if None != m:
+            relpath = m.group(0)[3:-1]
+            si4filelist.append(os.path.abspath(relpath)+'\n')
+    si4filelist = set(si4filelist)
 
 #3、save the lists
 outputfile = open(outputfile + '.si4project_filelist.txt', 'w')
