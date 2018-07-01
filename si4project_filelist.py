@@ -63,17 +63,16 @@ for entry in os.scandir():
                     OutputDirectory = os.path.normpath(os.path.join(os.getcwd(), OutputDirectory))
 
                     depfilename = os.path.splitext(projectfilename)[0] + '_' + TargetName + '.dep'
+                    depfilename = os.path.join(OutputDirectory, depfilename)
 
-                    for entry in os.scandir(OutputDirectory):
-                        if entry.is_file() and entry.name == depfilename:
-                            sourcefile = os.path.join(OutputDirectory, entry.name)
-                            outputfile = os.path.splitext(entry.name)[0]
-                            break
-                    if '' == sourcefile:
+                    if os.path.exists(depfilename):
+                        sourcefile = depfilename
+                        outputfile = os.path.splitext(projectfilename)[0]
+                        break
+                    else:
                         print('Please build the project once')
                         input()
                         sys.exit(0)
-                    break
 
 if '' == projectfilename:
     print('Can not find project file, enter any key to exit')
