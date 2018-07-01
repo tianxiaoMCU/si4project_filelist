@@ -1,6 +1,6 @@
 '''
 This tool will generate source insight 4 project file list
-from IAR build output file (*.dep)，then we can import the
+from build output file (*.dep)，then we can import the
 file list in the source insight 4 project.
 '''
 import os
@@ -18,11 +18,20 @@ for entry in os.scandir():
     if entry.is_file():
         if entry.name.endswith('.eww'):
             projectfilename = entry.name
-            for entry in os.scandir():
-                if entry.is_file() and entry.name.endswith('.dep'):
-                    sourcefile = entry.name
-                    outputfile = os.path.splitext(entry.name)[0]
-                    break
+
+            if os.path.exists('settings'):
+                sourcefile = entry.name.replace('.eww', '.dep')
+                outputfile = os.path.splitext(entry.name)[0]
+                wsdtfilepath = os.path.join(os.getcwd(), 'settings'+'\\'+entry.name.replace('.eww', '.wsdt'))
+
+                parsefile = open(wsdtfilepath, 'r')
+                tree = ET.ElementTree(file=parsefile)
+                ConfigDictionary = tree.find('ConfigDictionary')
+                CurrentConfigs = ConfigDictionary.find('CurrentConfigs')
+                TargetName = CurrentConfigs.find('Project').text
+                TargetName = os.path.basename(TargetName)
+                break
+
             if '' == sourcefile:
                 print('Please build the project once')
                 input()
@@ -43,6 +52,7 @@ for entry in os.scandir():
                 IsCurrentTarget = int(OPTFL.find('IsCurrentTarget').text)
                 if IsCurrentTarget:
                     TargetName = tag.find('TargetName').text
+                    break
 
             tree = ET.ElementTree(file=entry.name)
             for tag in tree.find('Targets').findall('Target'):
@@ -63,6 +73,7 @@ for entry in os.scandir():
                         print('Please build the project once')
                         input()
                         sys.exit(0)
+                    break
 
 if '' == projectfilename:
     print('Can not find project file, enter any key to exit')
@@ -74,39 +85,17 @@ parsefile = open(sourcefile, 'r')
 si4filelist = []
 if projectfilename.endswith('.eww'):
     tree = ET.ElementTree(file=parsefile)
-    tag_cfg_list = tree.findall('configuration')
-    output_tag = ''
+    for tag in tree.findall('configuration'):
+        if TargetName == tag.find('name').text:
+            output_tag = tag.find('outputs')
 
-    listsize = len(tag_cfg_list)
-    if listsize > 1:
-        print("There are multiple configuration:")
-        for index in range(0, listsize):
-            print("%d %s" % (index+1, tag_cfg_list[index].find('name').text))
-
-        print("Enter the index num to selete one:")
-        strin = input()
-        if strin.isdigit():
-            selnum = int(strin)
-            if (selnum < (listsize + 1)):
-                output_tag = tag_cfg_list[selnum - 1].find('outputs')
-        else:
-            print("Please restart the tool, the input shounld be a number")
-            input()
-            sys.exit(0)
-
-    elif listsize == 1:
-        output_tag = tag_cfg_list[0].find('outputs')
-    else:
-        print("Please check the project configuration")
-        input()
-        sys.exit(0)
-
-    for elem in output_tag.iterfind('file'):
-        if elem.text.startswith('$PROJ_DIR$'):
-            if elem.text.endswith('.c'):
-                si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
-            elif elem.text.endswith('.h'):
-                si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
+            for elem in output_tag.iterfind('file'):
+                if elem.text.startswith('$PROJ_DIR$'):
+                    if elem.text.endswith('.c'):
+                        si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
+                    elif elem.text.endswith('.h'):
+                        si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
+            break
 
 elif projectfilename.endswith('.uvproj') or projectfilename.endswith('.uvprojx'):
     for line in parsefile.readlines():
