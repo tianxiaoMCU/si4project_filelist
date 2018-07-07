@@ -18,21 +18,12 @@ for entry in os.scandir():
     if entry.is_file():
         if entry.name.endswith('.eww'):
             projectfilename = entry.name
-
-            if os.path.exists('settings'):
-                sourcefile = entry.name.replace('.eww', '.dep')
-                outputfile = os.path.splitext(entry.name)[0]
-                wsdtfilepath = os.path.join(os.getcwd(), 'settings'+'\\'+entry.name.replace('.eww', '.wsdt'))
-
-                parsefile = open(wsdtfilepath, 'r')
-                tree = ET.ElementTree(file=parsefile)
-                ConfigDictionary = tree.find('ConfigDictionary')
-                CurrentConfigs = ConfigDictionary.find('CurrentConfigs')
-                TargetName = CurrentConfigs.find('Project').text
-                TargetName = os.path.basename(TargetName)
+            depfilename = entry.name.replace('.eww', '.dep')
+            if os.path.exists(depfilename):
+                sourcefile = depfilename
+                outputfile = os.path.splitext(projectfilename)[0]
                 break
-
-            if '' == sourcefile:
+            else:
                 print('Please build the project once')
                 input()
                 sys.exit(0)
@@ -46,6 +37,8 @@ for entry in os.scandir():
                 uvoptfile = entry.name.replace('.uvprojx', '.uvoptx')
 
             tree = ET.ElementTree(file=uvoptfile)
+
+            # find current target
             for tag in tree.findall('Target'):
                 TargetOption = tag.find('TargetOption')
                 OPTFL = TargetOption.find('OPTFL')
@@ -54,25 +47,39 @@ for entry in os.scandir():
                     TargetName = tag.find('TargetName').text
                     break
 
-            tree = ET.ElementTree(file=entry.name)
-            for tag in tree.find('Targets').findall('Target'):
-                if tag.find('TargetName').text == TargetName:
-                    TargetOption = tag.find('TargetOption')
-                    TargetCommonOption = TargetOption.find('TargetCommonOption')
-                    OutputDirectory = TargetCommonOption.find('OutputDirectory').text
-                    OutputDirectory = os.path.normpath(os.path.join(os.getcwd(), OutputDirectory))
+            # find dep file of current target
+            Extensions = tree.find('Extensions')
+            if None == Extensions.findtext('nMigrate'):
+                # ide is keil4
+                depfilename = os.path.splitext(projectfilename)[0] + '_' + TargetName + '.dep'
+                if os.path.exists(depfilename):
+                    sourcefile = depfilename
+                    outputfile = os.path.splitext(projectfilename)[0]
 
-                    depfilename = os.path.splitext(projectfilename)[0] + '_' + TargetName + '.dep'
-                    depfilename = os.path.join(OutputDirectory, depfilename)
+            else:
+                # ide is keil5
+                tree = ET.ElementTree(file=entry.name)
+                for tag in tree.find('Targets').findall('Target'):
+                    if tag.find('TargetName').text == TargetName:
+                        TargetOption = tag.find('TargetOption')
+                        TargetCommonOption = TargetOption.find('TargetCommonOption')
+                        OutputDirectory = TargetCommonOption.find('OutputDirectory').text
+                        OutputDirectory = os.path.normpath(os.path.join(os.getcwd(), OutputDirectory))
 
-                    if os.path.exists(depfilename):
-                        sourcefile = depfilename
-                        outputfile = os.path.splitext(projectfilename)[0]
-                        break
-                    else:
-                        print('Please build the project once')
-                        input()
-                        sys.exit(0)
+                        depfilename = os.path.splitext(projectfilename)[0] + '_' + TargetName + '.dep'
+                        depfilename = os.path.join(OutputDirectory, depfilename)
+
+                        if os.path.exists(depfilename):
+                            sourcefile = depfilename
+                            outputfile = os.path.splitext(projectfilename)[0]
+                            break
+
+            if '' == sourcefile:
+                print('Please build the project once')
+                input()
+                sys.exit(0)
+
+            break
 
 if '' == projectfilename:
     print('Can not find project file, enter any key to exit')
