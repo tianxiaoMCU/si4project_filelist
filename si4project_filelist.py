@@ -22,6 +22,16 @@ for entry in os.scandir():
             if os.path.exists(depfilename):
                 sourcefile = depfilename
                 outputfile = os.path.splitext(projectfilename)[0]
+
+                # find current target
+                wsdtfile = os.path.join(os.getcwd(), 'settings')
+                wsdtfile = os.path.join(wsdtfile, entry.name.replace('.eww', '.wsdt'))
+
+                if os.path.exists(wsdtfile):
+                    tree = ET.ElementTree(file=wsdtfile)
+                    ConfigDictionary = tree.find('ConfigDictionary')
+                    CurrentConfigs = ConfigDictionary.find('CurrentConfigs')
+                    TargetName = CurrentConfigs.find('Project').text.split('/')[1]
                 break
             else:
                 print('Please build the project once')
@@ -95,11 +105,9 @@ if projectfilename.endswith('.eww'):
         if TargetName == tag.find('name').text:
             output_tag = tag.find('outputs')
 
-            for elem in output_tag.iterfind('file'):
+            for elem in output_tag.findall('file'):
                 if elem.text.startswith('$PROJ_DIR$'):
-                    if elem.text.endswith('.c'):
-                        si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
-                    elif elem.text.endswith('.h'):
+                    if elem.text.endswith('.c') or elem.text.endswith('.s') or elem.text.endswith('.h'):
                         si4filelist.append(os.path.abspath(elem.text.replace('$PROJ_DIR$', os.getcwd()))+'\n')
             break
 
