@@ -18,25 +18,26 @@ for entry in os.scandir():
     if entry.is_file():
         if entry.name.endswith('.eww'):
             projectfilename = entry.name
-            depfilename = entry.name.replace('.eww', '.dep')
-            if os.path.exists(depfilename):
-                sourcefile = depfilename
-                outputfile = os.path.splitext(projectfilename)[0]
 
-                # find current target
-                wsdtfile = os.path.join(os.getcwd(), 'settings')
-                wsdtfile = os.path.join(wsdtfile, entry.name.replace('.eww', '.wsdt'))
+            # find current target
+            wsdtfile = os.path.join(os.getcwd(), 'settings')
+            wsdtfile = os.path.join(wsdtfile, entry.name.replace('.eww', '.wsdt'))
 
-                if os.path.exists(wsdtfile):
-                    tree = ET.ElementTree(file=wsdtfile)
-                    ConfigDictionary = tree.find('ConfigDictionary')
-                    CurrentConfigs = ConfigDictionary.find('CurrentConfigs')
-                    TargetName = CurrentConfigs.find('Project').text.split('/')[1]
-                break
-            else:
-                print('Please build the project once')
-                input()
-                sys.exit(0)
+            if os.path.exists(wsdtfile):
+                tree = ET.ElementTree(file=wsdtfile)
+                ConfigDictionary = tree.find('ConfigDictionary')
+                CurrentConfigs = ConfigDictionary.find('CurrentConfigs')
+                TargetName = CurrentConfigs.find('Project').text.split('/')[1]
+
+                depfilename = CurrentConfigs.find('Project').text.split('/')[0] + '.dep'
+                if os.path.exists(depfilename):
+                    sourcefile = depfilename
+                    outputfile = os.path.splitext(projectfilename)[0]
+                    break
+
+            print('Please build the project once')
+            input()
+            sys.exit(0)
 
         elif entry.name.endswith('.uvproj') or entry.name.endswith('.uvprojx'):
             projectfilename = entry.name
