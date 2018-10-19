@@ -114,7 +114,7 @@ if projectfilename.endswith('.eww'):
 
 elif projectfilename.endswith('.uvproj') or projectfilename.endswith('.uvprojx'):
     for line in parsefile.readlines():
-        m = re.search(r"^F \(.*?\)|^I \(.*?\)", line)
+        m = re.search(r"^F \(.*?\)(?=\([\dxa-fA-F]{10}\))|^I \(.*?\)(?=\([\dxa-fA-F]{10}\))", line)
         if None != m:
             relpath = m.group(0)[3:-1]
             si4filelist.append(os.path.abspath(relpath)+'\n')
